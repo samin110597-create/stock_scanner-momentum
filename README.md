@@ -6,7 +6,7 @@
 
 **Professional momentum stock scanner with 20-point scoring**
 
-[![🚀 Try It Now](https://img.shields.io/badge/Try_It_Now-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://qullamaggie.sensibleanalytics.co)
+[![🚀 Try It Now](https://img.shields.io/badge/Try_It_Now-181717?style=for-the-badge&logo=github&logoColor=white)](https://samin110597-create.github.io/stock_scanner-momentum/)
 [![📊 Live Demo](https://img.shields.io/badge/Live_Demo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sensible-Analytics/qullamaggie_scanner)
 
 </div>
@@ -40,8 +40,9 @@ Every stock gets scored on:
 **Score: 60-79** = Good setup (on watchlist)  
 **Score: Below 60** = Avoid (or short candidate)
 
-### ⚡ **Real-Time Data**
-- Live Yahoo Finance data
+### ⚡ **Real Market Data**
+- Yahoo Finance price history when available
+- No synthetic or fabricated candle fallback
 - Pre-market and post-market scanning
 - Intraday score updates
 - Historical backtesting
@@ -70,7 +71,7 @@ Set it and forget it:
 
 **No signup. No credit card. Just instant stock scores.**
 
-👉 **[qullamaggie.sensibleanalytics.co](https://qullamaggie.sensibleanalytics.co)**
+👉 **[qullamaggie.sensibleanalytics.co](https://samin110597-create.github.io/stock_scanner-momentum/)**
 
 **Popular scans:**
 - High momentum stocks today
@@ -167,6 +168,6 @@ Want custom trading tools for your strategy? [Let's talk](mailto:hello@sensiblea
 
 **Ready to trade with data, not emotions?**
 
-[🚀 Try It Free](https://qullamaggie.sensibleanalytics.co) · [⭐ Star on GitHub](https://github.com/Sensible-Analytics/qullamaggie_scanner)
+[🚀 Try It Free](https://samin110597-create.github.io/stock_scanner-momentum/) · [⭐ Star on GitHub](https://github.com/Sensible-Analytics/qullamaggie_scanner)
 
 </div>
