@@ -1,8 +1,8 @@
 import type { OHLCV } from '../utils/calculations';
 import { stockCache } from './database';
 
-export type DataSource = 'yahoo' | 'mock' | 'cache';
-export let lastDataSource: DataSource = 'mock';
+export type DataSource = 'yahoo' | 'cache' | 'unavailable';
+export let lastDataSource: DataSource = 'unavailable';
 export const isDemoMode = false;
 
 export interface StockUniverse {
@@ -91,7 +91,7 @@ export async function fetchHistoricalData(
   try {
     if (!forceRefresh) {
       const cached = await stockCache.getCachedData(symbol);
-      if (cached) {
+      if (cached && validateOHLCV(cached.data as OHLCV[])) {
         console.log(`[Cache] Hit for ${symbol}`);
         lastDataSource = 'cache';
         return cached.data as OHLCV[];
@@ -101,25 +101,20 @@ export async function fetchHistoricalData(
     console.log(`[Fetch] Fetching ${symbol} from Yahoo Finance...`);
     const data = await fetchFromYahoo(symbol);
 
-    if (!data) {
-      console.log(`[Fetch] Yahoo failed, using mock data for ${symbol}`);
-      const mockData = generateMockData(symbol);
-      lastDataSource = 'mock';
-      await stockCache.setCachedData(symbol, mockData);
-      return mockData;
+    if (!data || !validateOHLCV(data)) {
+      console.warn(`[Fetch] Real market data unavailable for ${symbol}; no synthetic fallback will be generated.`);
+      lastDataSource = 'unavailable';
+      return null;
     }
-    
+
     await stockCache.setCachedData(symbol, data);
-    console.log(`[Fetch] Got ${data.length} bars for ${symbol}`);
-    
+    console.log(`[Fetch] Got ${data.length} real bars for ${symbol}`);
+    lastDataSource = 'yahoo';
     return data;
-    
   } catch (error) {
-    console.error(`[Fetch] Error for ${symbol}:`, error);
-    const mockData = generateMockData(symbol);
-    lastDataSource = 'mock';
-    await stockCache.setCachedData(symbol, mockData);
-    return mockData;
+    console.error(`[Fetch] Real market data error for ${symbol}:`, error);
+    lastDataSource = 'unavailable';
+    return null;
   }
 }
 
@@ -128,82 +123,16 @@ export async function fetchBatchHistoricalData(
   onProgress?: (current: number, total: number, symbol: string) => void
 ): Promise<Map<string, OHLCV[]>> {
   const results = new Map<string, OHLCV[]>();
-  
+
   for (let i = 0; i < symbols.length; i++) {
     const symbol = symbols[i];
     onProgress?.(i + 1, symbols.length, symbol);
-    
     const data = await fetchHistoricalData(symbol);
-    if (data) {
-      results.set(symbol, data);
-    }
-    
+    if (data) results.set(symbol, data);
     await new Promise(resolve => setTimeout(resolve, 50));
   }
-  
-  return results;
-}
 
-function generateMockData(symbol: string): OHLCV[] {
-  const data: OHLCV[] = [];
-  const today = new Date();
-  
-  // Different base prices and volatilities per symbol type
-  const symbolProfiles: Record<string, { base: number; vol: number; trend: number }> = {
-    'NVDA': { base: 800, vol: 0.04, trend: 0.002 },
-    'TSLA': { base: 250, vol: 0.045, trend: 0.0015 },
-    'AMD': { base: 150, vol: 0.035, trend: 0.001 },
-    'SMCI': { base: 400, vol: 0.05, trend: 0.002 },
-    'PLTR': { base: 25, vol: 0.04, trend: 0.001 },
-    'MARA': { base: 20, vol: 0.06, trend: 0.001 },
-    'COIN': { base: 180, vol: 0.045, trend: 0.001 },
-    'AAPL': { base: 180, vol: 0.02, trend: 0.0005 },
-    'MSFT': { base: 420, vol: 0.02, trend: 0.0005 },
-  };
-  
-  const profile = symbolProfiles[symbol] || { base: 100 + Math.random() * 200, vol: 0.025, trend: 0.0003 };
-  let basePrice = profile.base;
-  const volatility = profile.vol;
-  const trendFactor = profile.trend;
-  
-  // Generate 252 trading days of data
-  for (let i = 252; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    
-    // Skip weekends
-    if (date.getDay() === 0 || date.getDay() === 6) continue;
-    
-    // Add upward trend over time
-    const trendBias = trendFactor * (252 - i) / 252;
-    const change = (Math.random() - 0.45) * 2 * volatility + trendBias; // Slight upward bias
-    
-    const open = basePrice;
-    const close = open * (1 + change);
-    
-    // Higher intraday range for better ADR (3-8% typical range)
-    const intradayRangePercent = volatility * (1.5 + Math.random() * 1.5);
-    const high = Math.max(open, close) * (1 + intradayRangePercent);
-    const low = Math.min(open, close) * (1 - intradayRangePercent * 0.5);
-    
-    // Variable volume with occasional spikes
-    const baseVolume = 5000000 + Math.random() * 15000000;
-    const volumeSpike = Math.random() > 0.9 ? 2 + Math.random() * 2 : 1;
-    const volume = Math.floor(baseVolume * volumeSpike);
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      open,
-      high,
-      low,
-      close,
-      volume,
-    });
-    
-    basePrice = close;
-  }
-  
-  return data;
+  return results;
 }
 
 export function validateOHLCV(data: OHLCV[]): boolean {
